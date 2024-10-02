@@ -1,7 +1,8 @@
 const codeArea = document.getElementById('code-area');
 const terminal = document.getElementById('terminal');
 
-const runButton = document.getElementById('Run');
+const runBF2Button = document.getElementById('RunBF2');
+const runFIButton = document.getElementById('RunFI');
 const stopButton = document.getElementById('Stop');
 const downloadButton = document.getElementById('Download');
 const uploadButton = document.getElementById('Upload');
@@ -36,7 +37,7 @@ const insertAtCursor = (text, start, end) => {
   codeArea.focus();
 }
 
-const runCode = () => {
+const runBrainfuck2 = () => {
   const code = codeArea.value;
   if (!code) {
     terminal.textContent = "Error: Code cannot be empty.";
@@ -46,4 +47,17 @@ const runCode = () => {
   terminal.textContent = output;
 };
 
-runButton.addEventListener('click', runCode);
+const runFuckIt = () => {
+  terminal.textContent = 'Running Fuck It... \n'
+  const code = codeArea.value;
+  if (!code) {
+    terminal.textContent = "Error: Code cannot be empty.";
+    return;
+  }
+
+  const output = fuckit(code)
+  terminal.textContent += output
+}
+
+runBF2Button.addEventListener('click', runBrainfuck2);
+runFIButton.addEventListener('click', runFuckIt)
