@@ -73,12 +73,11 @@ class BF2Interpreter {
 		}
   }
 
-	printTape(operation) {
+	printTape(text, operation) {
     console.log(this.tape);
-    if (!this.tape.includes('%')) {
+    if (text.includes('%')) {
         const lineNumber = tapeTerminal.textContent.split('\n').length;
         const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
-        const length = this.tape.length.toString();
 				const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
         tapeTerminal.textContent += `${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]\n`;
     }
@@ -101,7 +100,7 @@ class BF2Interpreter {
 		}
 
 		while (this.instructionPointer < this.code.length) {
-			this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer-1])
+			this.printTape(incomingCode, this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer-1])
 			const command = this.code[this.instructionPointer];
 			const error = this.executeCommand(command);
 			if(error){
@@ -111,7 +110,7 @@ class BF2Interpreter {
 			this.instructionPointer++;
 		}
 
-		this.printTape(this.code[this.instructionPointer-1])
+		this.printTape(incomingCode, this.code[this.instructionPointer-1])
 
 		return this.output;
   }
