@@ -1,3 +1,5 @@
+const tapeTerminal = document.getElementById('tape_output');
+
 class BF2Interpreter {
   constructor() {
 		this.code = ""; // BF2 code
@@ -71,6 +73,17 @@ class BF2Interpreter {
 		}
   }
 
+	printTape(operation) {
+    console.log(this.tape);
+    if (!this.tape.includes('%')) {
+        const lineNumber = tapeTerminal.textContent.split('\n').length;
+        const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
+        const length = this.tape.length.toString();
+				const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
+        tapeTerminal.textContent += `${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]\n`;
+    }
+	}
+
   // Function to run the Brainfuck code
   run(incomingCode) {
 		this.code = incomingCode.replace(' ', '').replace('\n', '')
@@ -88,14 +101,17 @@ class BF2Interpreter {
 		}
 
 		while (this.instructionPointer < this.code.length) {
+			this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer-1])
 			const command = this.code[this.instructionPointer];
 			const error = this.executeCommand(command);
 			if(error){
-				this.output = error + this.output;
+				this.output += error;
 				break;
 			}
 			this.instructionPointer++;
 		}
+
+		this.printTape(this.code[this.instructionPointer-1])
 
 		return this.output;
   }
