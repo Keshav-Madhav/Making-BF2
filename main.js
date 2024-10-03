@@ -45,6 +45,7 @@ const runBrainfuck2 = () => {
   const showTape = isTapeTerminal.checked;
   if (!code) {
     terminal.textContent = "Error: Code cannot be empty.";
+    scrollTerminalToBottom(terminal)
     return;
   }
 
@@ -57,13 +58,17 @@ const runBrainfuck2 = () => {
     '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n' +
     output.result + 
     `\n\nExecution Time: ${executionTimeNs} μs(micro-second) \n\n`;
+  scrollTerminalToBottom(terminal)
+
   tapeTerminal.textContent = output.tape;
+  scrollTerminalToBottom(tapeTerminal)
 };
 
 const runFuckIt = () => {
   const code = codeArea.value;
   if (!code) {
-    terminal.textContent = "Error: Code cannot be empty.";
+    terminal.textContent = "Error: Code cannot be empty.\n";
+    scrollTerminalToBottom(terminal)
     return;
   }
 
@@ -75,9 +80,36 @@ const runFuckIt = () => {
   terminal.textContent += 
     '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n' +
     'Running Fuck It... \n' +
-    output + 
+    '--- Output: \n' + output + 
     `\n\nExecution Time: ${executionTimeNs} μs(micro-second) \n\n`;
+  scrollTerminalToBottom(terminal)
 };
+
+function downloadBF2Code() {
+  const code = codeArea.value;
+  if (!code) {
+    terminal.textContent = 'Error: Code cannot be empty.\n'
+    scrollTerminalToBottom(terminal)
+    return;
+  }
+
+  const blob = new Blob([code], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  
+  // Set the file name with custom extension
+  a.download = 'my_bf2_code.bf2';
+
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function scrollTerminalToBottom(scrollTerminal){
+  scrollTerminal.scrollTop = scrollTerminal.scrollHeight;
+}
 
 runBF2Button.addEventListener('click', runBrainfuck2);
 runFIButton.addEventListener('click', runFuckIt);
@@ -85,3 +117,4 @@ clearButton.addEventListener('click', ()=>{
   tapeTerminal.textContent = '';
   terminal.textContent = ''
 })
+downloadButton.addEventListener('click', downloadBF2Code);
