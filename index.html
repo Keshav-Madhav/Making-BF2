@@ -12,12 +12,18 @@
     <button id="RunBF2">Run BrainFuck2</button>
     <button id="RunFI">Run FuckIt (text to BF2)</button>
     <button id="Stop">Stop Code</button>
+    <button id="Clear">Clear Terminals</button>
     <button id="Download">Download</button>
     <button id="Upload">Upload</button>
+
+    <div class="tapecheck">
+      <input type="checkbox" title="Output Tape" id="tape_out_checkbox"/>
+      <label for="tape_out_checkbox">Output Tape (Impacts performance)</label>
+    </div>
   </div>
   <div class="terminals">
     <textarea id="terminal" placeholder="Output Terminal"></textarea>
-    <textarea id="tape_output" placeholder="Tape Terminal" disabled></textarea>
+    <textarea id="tape_terminal" placeholder="Tape Terminal" disabled></textarea>
   </div>
 </body>
 <script src="fuckIt.js"></script>

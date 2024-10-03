@@ -1,5 +1,3 @@
-const tapeTerminal = document.getElementById('tape_output');
-
 class BF2Interpreter {
   constructor(calculateTapeLength = false) {
     this.code = ""; // BF2 code
@@ -13,6 +11,8 @@ class BF2Interpreter {
     this.defaultTapeLength = 10; // Default tape length if not provided
     this.lengthWarning = false; // To track if length was not defined
     this.calculateTapeLength = calculateTapeLength; // To calculate tape length from %...%
+		this.tapeOutput = "" // Stores a string as terminal output for tape
+		this.isTapeRecorded = false // Marks whether the tape is to be recorded or not
 
     // Define command functions as a lookup table
     this.commandMap = {
@@ -87,16 +87,17 @@ class BF2Interpreter {
   // Print the tape state, limited to every N operations for performance
   printTape(operation) {
 		if(!this.calculateTapeLength){
-			const lineNumber = tapeTerminal.textContent.split('\n').length;
+			const lineNumber = this.tapeOutput.split('\n').length;
 			const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
 			const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
-			tapeTerminal.textContent += `\n ${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]`;
+			this.tapeOutput = this.tapeOutput.concat(`\n ${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]`);
 		}
 	}
 
   // Function to run the Brainfuck code
-  run(incomingCode) {
-    tapeTerminal.textContent = '';
+  run(incomingCode, recordTape) {
+		this.isTapeRecorded = recordTape;
+    this.tapeOutput = '';
     this.code = [...incomingCode].filter(char => char !== ' ' && char !== '\n').join('');
     this.output += "Running brainfuck2... \n";
 
@@ -118,7 +119,7 @@ class BF2Interpreter {
     }
 
     while (this.instructionPointer < this.code.length) {
-      this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer - 1]);
+      this.isTapeRecorded && this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer - 1]);
       const command = this.code[this.instructionPointer];
       const error = this.executeCommand(command);
       if (error) {
@@ -128,9 +129,12 @@ class BF2Interpreter {
       this.instructionPointer++;
     }
 
-    this.printTape(this.code[this.instructionPointer-1])
+    this.isTapeRecorded && this.printTape(this.code[this.instructionPointer-1])
 
-    return this.output;
+    return {
+			result: this.output,
+			tape: this.tapeOutput
+		}
   }
 
   // Function to execute each Brainfuck command using the lookup table
@@ -148,7 +152,7 @@ class BF2Interpreter {
   decrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] - 1) & 255; }
   outputCell() {
     const str = String.fromCharCode(this.tape[this.pointer]);
-    tapeTerminal.textContent += `    => ${str === '\n' ? '\\n' : str}`;
+    this.isTapeRecorded && (this.tapeOutput = this.tapeOutput.concat(`    => ${str === '\n' ? '\\n' : str}`))
     this.output += str;
   }
   inputCell() { this.tape[this.pointer] = this.inputIndex < this.input.length ? this.input.charCodeAt(this.inputIndex++) : 0; }

@@ -46,7 +46,7 @@ body{
   cursor: pointer;
 }
 
-#Download{
+.tapecheck{
   margin-left: auto;
 }
 
@@ -59,7 +59,7 @@ body{
   gap:0.5px;
 }
 
-#terminal, #tape_output{
+#terminal, #tape_terminal{
   height: 100%;
   background-color: black;
   color: white;
@@ -72,18 +72,18 @@ body{
   width: 60%;
   min-width: 40%;
 }
-#tape_output{
+#tape_terminal{
   width: 40%;
   flex: 1;
   resize: none;
 }
 
-#code-area, #terminal, #tape_output{
+#code-area, #terminal, #tape_terminal{
   font-family: monospace;
   font-size: 1rem;
   border: none;
 }
 
-#code-area:focus, #terminal:focus, #tape_output:focus{
+#code-area:focus, #terminal:focus, #tape_terminal:focus{
   outline: none;
 }
