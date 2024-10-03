@@ -14,16 +14,22 @@ class BF2Interpreter {
 		this.tapeOutput = "" // Stores a string as terminal output for tape
 		this.isTapeRecorded = false // Marks whether the tape is to be recorded or not
 
-    // Define command functions as a lookup table
-    this.commandMap = {
-      '>': this.incrementPointer.bind(this),
-      '<': this.decrementPointer.bind(this),
-      '+': this.incrementCell.bind(this),
-      '-': this.decrementCell.bind(this),
-      '.': this.outputCell.bind(this),
-      ',': this.inputCell.bind(this),
-      '[': this.loopStart.bind(this),
-      ']': this.loopEnd.bind(this)
+    // Pre-initialize the tape to default size
+    this.tape = new Array(this.defaultTapeLength).fill(0);
+
+    // Direct array mapping for performance
+    this.commands = [
+      this.incrementPointer.bind(this), // '>'
+      this.decrementPointer.bind(this), // '<'
+      this.incrementCell.bind(this),    // '+'
+      this.decrementCell.bind(this),    // '-'
+      this.outputCell.bind(this),       // '.'
+      this.inputCell.bind(this),        // ','
+      this.loopStart.bind(this),        // '['
+      this.loopEnd.bind(this)           // ']'
+    ];
+    this.commandIndices = {
+      '>': 0, '<': 1, '+': 2, '-': 3, '.': 4, ',': 5, '[': 6, ']': 7
     };
   }
 
@@ -84,22 +90,22 @@ class BF2Interpreter {
     }
   }
 
-  // Print the tape state, limited to every N operations for performance
+  // Efficient tape output to minimize redundant operations
   printTape(operation) {
-		if(!this.calculateTapeLength){
-			const lineNumber = this.tapeOutput.split('\n').length;
-			const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
-			const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
-			this.tapeOutput = this.tapeOutput.concat(`\n ${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]`);
-		}
-	}
+    if (!this.calculateTapeLength) {
+      const lineNumber = this.tapeOutput.split('\n').length;
+      const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
+      const spaceSeparatedTape = this.tape.join(', ');
+      this.tapeOutput += `\n ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]`;
+    }
+  }
 
   // Function to run the Brainfuck code
   run(incomingCode, recordTape) {
 		this.isTapeRecorded = recordTape;
     this.tapeOutput = '';
-    this.code = [...incomingCode].filter(char => char !== ' ' && char !== '\n').join('');
-    this.output += "Running brainfuck2... \n" + '--- Output: \n';
+    this.code = incomingCode.replace(/[\s\n]+/g, ''); // Remove whitespaces and newlines
+    this.output = "Running brainfuck2... \n--- Output: \n";
 
 		 // Parse tape length before running the main code
 		if(!this.calculateTapeLength){
@@ -108,10 +114,10 @@ class BF2Interpreter {
 			this.tape = new Array(this.defaultTapeLength).fill(0); // Fall back to default if invalid
 		}
 
-		// If tape length was not defined, add a warning to the output
-		if (this.lengthWarning) {
-			this.output += "Warning: Tape length not defined. Using default length of 10.\n";
-		}
+    // If tape length was not defined, add a warning to the output
+    if (this.lengthWarning) {
+      this.output += "Warning: Tape length not defined. Using default length of 10.\n";
+    }
 
     const loopError = this.preprocessLoops(); // Precompute loop positions
     if (loopError) {
@@ -129,19 +135,33 @@ class BF2Interpreter {
       this.instructionPointer++;
     }
 
-    this.isTapeRecorded && this.printTape(this.code[this.instructionPointer-1])
+    this.isTapeRecorded && this.printTape(this.code[this.instructionPointer - 1]);
 
     return {
-			result: this.output,
-			tape: this.tapeOutput
-		}
+      result: this.output,
+      tape: this.tapeOutput
+    };
   }
 
-  // Function to execute each Brainfuck command using the lookup table
+  // Function to execute each Brainfuck command with loop unrolling optimization
   executeCommand(command) {
-    const commandFn = this.commandMap[command];
-    if (commandFn) {
-      return commandFn();
+    const commandIndex = this.commandIndices[command];
+    if (commandIndex !== undefined) {
+      // Loop unrolling optimization: apply consecutive commands in one go
+      if (command === '+' || command === '-') {
+        let consecutiveCount = 1;
+        while (this.code[this.instructionPointer + consecutiveCount] === command) {
+          consecutiveCount++;
+        }
+        if (command === '+') {
+          this.tape[this.pointer] = (this.tape[this.pointer] + consecutiveCount) & 255;
+        } else if (command === '-') {
+          this.tape[this.pointer] = (this.tape[this.pointer] - consecutiveCount) & 255;
+        }
+        this.instructionPointer += consecutiveCount - 1;
+      } else {
+        return this.commands[commandIndex]();
+      }
     }
   }
 
@@ -152,7 +172,7 @@ class BF2Interpreter {
   decrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] - 1) & 255; }
   outputCell() {
     const str = String.fromCharCode(this.tape[this.pointer]);
-    this.isTapeRecorded && (this.tapeOutput = this.tapeOutput.concat(`    => ${str === '\n' ? '\\n' : str}`))
+    this.isTapeRecorded && (this.tapeOutput += `    => ${str === '\n' ? '\\n' : str}`);
     this.output += str;
   }
   inputCell() { this.tape[this.pointer] = this.inputIndex < this.input.length ? this.input.charCodeAt(this.inputIndex++) : 0; }
