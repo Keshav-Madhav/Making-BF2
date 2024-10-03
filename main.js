@@ -43,21 +43,30 @@ const runBrainfuck2 = () => {
     terminal.textContent = "Error: Code cannot be empty.";
     return;
   }
+
+  const startTime = window.performance.now();
   const output = new BF2Interpreter().run(code);
-  terminal.textContent = output;
+  const endTime = window.performance.now();
+
+  const executionTimeNs = ((endTime - startTime) * 1000); // Convert to nanoseconds
+  terminal.textContent = output + `\n\nExecution Time: ${executionTimeNs} μs(micro-second)`;
 };
 
 const runFuckIt = () => {
-  terminal.textContent = 'Running Fuck It... \n'
+  terminal.textContent = 'Running Fuck It... \n';
   const code = codeArea.value;
   if (!code) {
     terminal.textContent = "Error: Code cannot be empty.";
     return;
   }
 
-  const output = fuckit(code)
-  terminal.textContent += output
-}
+  const startTime = window.performance.now();
+  const output = fuckit(code);
+  const endTime = window.performance.now();
+
+  const executionTimeNs = ((endTime - startTime) * 1000); // Convert to nanoseconds
+  terminal.textContent += output + `\n\nExecution Time: ${executionTimeNs} μs(micro-second)`;
+};
 
 runBF2Button.addEventListener('click', runBrainfuck2);
-runFIButton.addEventListener('click', runFuckIt)
+runFIButton.addEventListener('click', runFuckIt);
