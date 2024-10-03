@@ -99,7 +99,7 @@ class BF2Interpreter {
 		this.isTapeRecorded = recordTape;
     this.tapeOutput = '';
     this.code = [...incomingCode].filter(char => char !== ' ' && char !== '\n').join('');
-    this.output += "Running brainfuck2... \n";
+    this.output += "Running brainfuck2... \n" + '--- Output: \n';
 
 		 // Parse tape length before running the main code
 		if(!this.calculateTapeLength){

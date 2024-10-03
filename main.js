@@ -7,7 +7,7 @@ const runFIButton = document.getElementById('RunFI');
 const stopButton = document.getElementById('Stop');
 const clearButton = document.getElementById('Clear');
 const downloadButton = document.getElementById('Download');
-const uploadButton = document.getElementById('Upload');
+const uploadInput = document.getElementById('Upload');
 const isTapeTerminal = document.getElementById('tape_out_checkbox');
 
 codeArea.addEventListener('keydown', (e) => {
@@ -106,6 +106,53 @@ function downloadBF2Code() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+function uploadBF2orBrainfuckFile(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    terminal.textContent += "Error: No file selected.\n";
+    return;
+  }
+
+  const fileName = file.name.toLowerCase();
+  const validExtensions = ['.bf2', '.bf', '.b'];
+  if (!validExtensions.some(ext => fileName.endsWith(ext))) {
+    terminal.textContent += "Error: Please upload a .bf2, .bf, or .b file.\n";
+    event.target.value = ''; // Clear the file input
+    return;
+  }
+
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const contents = e.target.result;
+    
+    // Clear existing code from the code area
+    codeArea.value = '';
+    
+    // Add the new content to the code area
+    codeArea.value = contents;
+    
+    terminal.textContent += `File "${fileName}" uploaded successfully. Content added to code area.\n`;
+  };
+
+  reader.onerror = function(e) {
+    terminal.textContent += `Error reading file: ${e.target.error.name}\n`;
+  };
+
+  reader.readAsText(file);
+}
+
+// Wait for the DOM to be fully loaded before adding event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  const uploadInput = document.getElementById('Upload');
+  if (uploadInput) {
+    uploadInput.addEventListener('change', uploadBF2orBrainfuckFile);
+    console.log('Event listener added to upload input');
+  } else {
+    console.error('Upload input element not found');
+  }
+});
 
 function scrollTerminalToBottom(scrollTerminal){
   scrollTerminal.scrollTop = scrollTerminal.scrollHeight;
