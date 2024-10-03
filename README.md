@@ -7,6 +7,8 @@ BF2 is an extension of the Brainfuck programming language that uses the conventi
 
 - [Introduction](#introduction)
 - [Features](#features)
+  - [WhiteSpace and comment support](#white-space-and-comment-support)
+  - [Tape Terminal](#tape-terminal)
   - [Tape Length Definition](#tape-length-definition)
   - [Brainfuck Command Support](#brainfuck-command-support)
 - [Usage](#usage)
@@ -27,6 +29,10 @@ BF2 is a remake of the original Brainfuck concept, implemented in JavaScript wit
 
 Due to the compiler being built in javascript, an easy to implement easy of life feature has been inplemented which removes whitespaces and new/next lines. This allows to make easier to read brainfuck code which can be written out spread over multiple lines and indentation.
 Comments are supported aswell as any character other than the reserved characters are removed/ignored.
+
+### Tape Terminal
+
+Tape terminal is a string that will be returned after the brainfuck code is interpreted. This string is formatted in a terminal style to provide feedback to the user showing exactly what changes are happening in the tape after a specific action and what is being printed during that action. This tape terminal is specially useful when writing code as it provides insight into the memory updation and allocation. The run function takes a boolean to determine whether the tape will be returned as it is a performance intensive action. Default is false meaning tape will not be recorded and performance will be optimal.
 
 ### Tape Length Definition
 
