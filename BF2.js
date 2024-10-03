@@ -1,7 +1,7 @@
 const tapeTerminal = document.getElementById('tape_output');
 
 class BF2Interpreter {
-  constructor() {
+  constructor(calculateTapeLength = false) {
 		this.code = ""; // BF2 code
 		this.input = ""; // Input to the Brain
 		this.tape = []; // Memory tape, will be initialized after processing tape length
@@ -13,6 +13,7 @@ class BF2Interpreter {
 		this.loopStack = []; // For error handling brackets
 		this.defaultTapeLength = 10; // Default tape length if not provided
 		this.lengthWarning = false; // To track if length was not defined
+		this.calculateTapeLength = calculateTapeLength; // To calculate tape length from %...%
   }
 
   // Function to extract and calculate tape length from %...%
@@ -36,7 +37,7 @@ class BF2Interpreter {
     }
 
     // Run a "mini" interpreter to calculate the tape length
-    const miniInterpreter = new BF2Interpreter();
+    const miniInterpreter = new BF2Interpreter(true);
     miniInterpreter.run(lengthCode);
 
     const tapeLength = miniInterpreter.tape[0]; // First tape cell defines length
@@ -73,21 +74,28 @@ class BF2Interpreter {
 		}
   }
 
-	printTape(text, operation) {
-    console.log(this.tape);
-    if (text.includes('%')) {
-        const lineNumber = tapeTerminal.textContent.split('\n').length;
-        const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
-				const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
-        tapeTerminal.textContent += `${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]\n`;
-    }
+	printTape(operation) {
+		console.log(this.tape);
+		if(!this.calculateTapeLength){
+			const lineNumber = tapeTerminal.textContent.split('\n').length;
+			const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
+			const spaceSeperatedTape = this.tape.toString().split(',').join(', ');
+			tapeTerminal.textContent += `\n ${paddedLineNumber}->   ${operation}   [${spaceSeperatedTape}]`;
+		}
 	}
 
   // Function to run the Brainfuck code
   run(incomingCode) {
-		this.code = incomingCode.replace(' ', '').replace('\n', '')
+		tapeTerminal.textContent = ''
+		this.code = incomingCode.replaceAll(' ', '').replaceAll('\n', '')
 		this.output += "Running brainfuck2... \n";
-		this.parseTapeLength(); // Parse tape length before running the main code
+
+		 // Parse tape length before running the main code
+		if(!this.calculateTapeLength){
+			this.parseTapeLength();
+		} else {
+			this.tape = new Array(this.defaultTapeLength).fill(0); // Fall back to default if invalid
+		}
 
 		// If tape length was not defined, add a warning to the output
 		if (this.lengthWarning) {
@@ -100,7 +108,7 @@ class BF2Interpreter {
 		}
 
 		while (this.instructionPointer < this.code.length) {
-			this.printTape(incomingCode, this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer-1])
+			this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer-1])
 			const command = this.code[this.instructionPointer];
 			const error = this.executeCommand(command);
 			if(error){
@@ -110,7 +118,7 @@ class BF2Interpreter {
 			this.instructionPointer++;
 		}
 
-		this.printTape(incomingCode, this.code[this.instructionPointer-1])
+		this.printTape(this.code[this.instructionPointer-1])
 
 		return this.output;
   }
@@ -138,7 +146,9 @@ class BF2Interpreter {
 				break;
 			case '.':
 				console.log(this.tape[this.pointer])
-				this.output += String.fromCharCode(this.tape[this.pointer]);
+				const str = String.fromCharCode(this.tape[this.pointer])
+				tapeTerminal.textContent += `    => ${str === '\n' ? '\\n' : str}`
+				this.output += str;
 				break;
 			case ',':
 				if (this.inputIndex < this.input.length) {
