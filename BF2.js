@@ -14,6 +14,10 @@ class BF2Interpreter {
 		this.tapeOutput = "" // Stores a string as terminal output for tape
 		this.isTapeRecorded = false // Marks whether the tape is to be recorded or not
 
+    this.stopped = false; // Flag to stop the interpreter
+    this.maxOperations = 1000000; // Limit to avoid infinite loops
+    this.operationCount = 0; // Track number of operations
+
     // Pre-initialize the tape to default size
     this.tape = new Array(this.defaultTapeLength).fill(0);
 
@@ -100,12 +104,17 @@ class BF2Interpreter {
     }
   }
 
-  // Function to run the Brainfuck code
-  run(incomingCode, recordTape) {
-		this.isTapeRecorded = recordTape;
+  // Function to stop execution
+  stopCode() {
+    this.stopped = true;
+  }
+
+  // Function to run the Brainfuck code asynchronously
+  async run(incomingCode, recordTape) {
+    this.isTapeRecorded = recordTape;
+    recordTape && (this.maxOperations = 10000);
     this.tapeOutput = '';
     this.code = incomingCode.replace(/[\s\n]+/g, ''); // Remove whitespaces and newlines
-    this.output = "Running brainfuck2... \n--- Output: \n";
 
 		 // Parse tape length before running the main code
 		if(!this.calculateTapeLength){
@@ -116,26 +125,50 @@ class BF2Interpreter {
 
     // If tape length was not defined, add a warning to the output
     if (this.lengthWarning) {
-      this.output += "Warning: Tape length not defined. Using default length of 10.\n";
+      this.output += "Warning: Tape length not defined. Using default length of 10.\n\n";
     }
+
+    this.output += "--- Output: \n";
 
     const loopError = this.preprocessLoops(); // Precompute loop positions
     if (loopError) {
       this.output += loopError;
+      return { result: this.output, tape: this.tapeOutput };
     }
 
     while (this.instructionPointer < this.code.length) {
-      this.isTapeRecorded && this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer - 1]);
+      if (this.stopped) {
+        this.output += "\nExecution stopped by user.\n";
+        break;
+      }
+
+      this.operationCount++;
+      if (this.operationCount > this.maxOperations) {
+        this.output += `\n\nExecution stopped: Max operations limit reached (${this.maxOperations}).\n`;
+        break;
+      }
+
+      if (this.isTapeRecorded) {
+        this.printTape(this.instructionPointer === 0 ? ' ' : this.code[this.instructionPointer - 1]);
+      }
+
       const command = this.code[this.instructionPointer];
       const error = this.executeCommand(command);
       if (error) {
         this.output += error;
         break;
       }
+
       this.instructionPointer++;
+      // Yield back to the event loop every 1000 operations to keep the UI responsive
+      if (this.operationCount % 1000 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0)); // Pause and yield control
+      }
     }
 
-    this.isTapeRecorded && this.printTape(this.code[this.instructionPointer - 1]);
+    if (this.isTapeRecorded) {
+      this.printTape(this.code[this.instructionPointer - 1]);
+    }
 
     return {
       result: this.output,
