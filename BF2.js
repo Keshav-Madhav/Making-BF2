@@ -15,7 +15,7 @@ class BF2Interpreter {
 		this.isTapeRecorded = false // Marks whether the tape is to be recorded or not
 
     this.stopped = false; // Flag to stop the interpreter
-    this.maxOperations = 1000000; // Limit to avoid infinite loops
+    this.maxOperations = 1000000000; // Limit to avoid infinite loops
     this.operationCount = 0; // Track number of operations
 
     // Pre-initialize the tape to default size
@@ -160,10 +160,6 @@ class BF2Interpreter {
       }
 
       this.instructionPointer++;
-      // Yield back to the event loop every 1000 operations to keep the UI responsive
-      if (this.operationCount % 1000 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 0)); // Pause and yield control
-      }
     }
 
     if (this.isTapeRecorded) {

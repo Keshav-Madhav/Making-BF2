@@ -42,51 +42,57 @@ const insertAtCursor = (text, start, end) => {
   codeArea.focus();
 }
 
-const runBrainfuck2 = async () => {
+const runBrainfuck2 = () => {
   const code = codeArea.value;
   const showTape = isTapeTerminal.checked;
+
   if (!code) {
     terminal.textContent = "Error: Code cannot be empty.";
     scrollTerminalToBottom(terminal);
     return;
   }
 
-  // Reset any previous stopped state and references
-  if (runningInterpreter) {
-    runningInterpreter.stopped = true; // Ensure the previous one is stopped if rerun is clicked
-  }
+  runBF2Button.innerText = 'Running..';
+  runBF2Button.disabled = true;
+  stopButton.disabled = false;
+  terminal.textContent += '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\nRunning brainfuck2... \n\n';
 
-  runBF2Button.innerText = 'Running..'
-  runBF2Button.disabled=true;
-  stopButton.disabled=false;
-  terminal.textContent += '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\nRunning brainfuck2... \n\n'
-  
-  const startTime = window.performance.now();
-  
-  try {
-    runningInterpreter = new BF2Interpreter(); // Create a new interpreter instance
-    const output = await runningInterpreter.run(code, showTape); // Await the asynchronous run
+  const worker = new Worker('./bf2Worker.js'); // Create a new worker
 
-    const endTime = window.performance.now();
-    const executionTimeNs = ((endTime - startTime) * 1000); // Convert to microseconds
+  worker.postMessage({
+    code,
+    showTape,
+  });
 
-    terminal.textContent += 
-      output.result + 
-      `\n\nExecution Time: ${executionTimeNs} μs(micro-second) \n\n`;
+  worker.onmessage = (e) => {
+    if (e.data.error) {
+      terminal.textContent = `Error during execution: ${e.data.error}`;
+    } else {
+      terminal.textContent += e.data.result +
+        `\n\nExecution Time: ${e.data.executionTime} ms \n\n`;
+      tapeTerminal.textContent = e.data.tape;
+    }
+
+    runBF2Button.innerText = 'Run BrainFuck2';
+    runBF2Button.disabled = false;
+    stopButton.disabled = true;
+
     scrollTerminalToBottom(terminal);
-
-    tapeTerminal.textContent = output.tape;
     scrollTerminalToBottom(tapeTerminal);
+  };
 
-  } catch (error) {
-    terminal.textContent = `Error during execution: ${error.message}`;
+  worker.onerror = (e) => {
+    terminal.textContent = `Error in worker: ${e.message}`;
+    runBF2Button.innerText = 'Run BrainFuck2';
+    runBF2Button.disabled = false;
+    stopButton.disabled = true;
+  };
+
+  stopButton.addEventListener('click', () => {
+    worker.terminate(); // Stop the worker if the stop button is clicked
+    terminal.textContent += "\nExecution stopped by user.\n";
     scrollTerminalToBottom(terminal);
-  } finally {
-    runningInterpreter = null; // Clear the reference once execution is complete
-    runBF2Button.innerText = 'Run BrainFuck2'
-    runBF2Button.disabled=false;
-    stopButton.disabled=true;
-  }
+  });
 };
 
 const runFuckIt = () => {
@@ -192,8 +198,8 @@ clearButton.addEventListener('click', ()=>{
 downloadButton.addEventListener('click', downloadBF2Code);
 
 stopButton.addEventListener('click', () => {
-  if (runningInterpreter) {
-    runningInterpreter.stopCode(); // Call the stop function in the interpreter
+  if (worker) {
+    worker.terminate(); // Terminate the worker
     terminal.textContent += "\nExecution stopped by user.\n";
     scrollTerminalToBottom(terminal);
   }
