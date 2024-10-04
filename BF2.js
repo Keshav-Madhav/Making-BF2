@@ -17,6 +17,8 @@ class BF2Interpreter {
     this.stopped = false; // Flag to stop the interpreter
     this.maxOperations = 1000000000; // Limit to avoid infinite loops
     this.operationCount = 0; // Track number of operations
+    this.maxOutputLength = 10000;
+    this.lenCounter = 0;
 
     // Pre-initialize the tape to default size
     this.tape = new Array(this.defaultTapeLength).fill(0);
@@ -112,7 +114,7 @@ class BF2Interpreter {
   // Function to run the Brainfuck code asynchronously
   async run(incomingCode, recordTape) {
     this.isTapeRecorded = recordTape;
-    recordTape && (this.maxOperations = 10000);
+    recordTape && (this.maxOperations = 100000);
     this.tapeOutput = '';
     this.code = incomingCode.replace(/[\s\n]+/g, ''); // Remove whitespaces and newlines
 
@@ -144,7 +146,6 @@ class BF2Interpreter {
 
       this.operationCount++;
       if (this.operationCount > this.maxOperations) {
-        this.output += `\n\nExecution stopped: Max operations limit reached (${this.maxOperations}).\n`;
         break;
       }
 
@@ -165,6 +166,9 @@ class BF2Interpreter {
     if (this.isTapeRecorded) {
       this.printTape(this.code[this.instructionPointer - 1]);
     }
+
+    this.lenCounter > 0 && (this.output += `...(${this.lenCounter} more characters)`);
+    this.operationCount > this.maxOperations && (this.output += `\n\nExecution stopped: Max operations limit reached (${this.maxOperations}).\n`);
 
     return {
       result: this.output,
@@ -202,7 +206,8 @@ class BF2Interpreter {
   outputCell() {
     const str = String.fromCharCode(this.tape[this.pointer]);
     this.isTapeRecorded && (this.tapeOutput += `    => ${str === '\n' ? '\\n' : str}`);
-    this.output += str;
+    const len = this.output.length;
+    len > this.maxOutputLength ? this.lenCounter += 1 : this.output += str;
   }
   inputCell() { this.tape[this.pointer] = this.inputIndex < this.input.length ? this.input.charCodeAt(this.inputIndex++) : 0; }
 	loopStart() { if (this.tape[this.pointer] === 0) this.instructionPointer = this.bracketMap[this.instructionPointer]; }

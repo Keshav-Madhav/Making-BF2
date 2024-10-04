@@ -90,7 +90,10 @@ const runBrainfuck2 = () => {
 
   stopButton.addEventListener('click', () => {
     worker.terminate(); // Stop the worker if the stop button is clicked
-    terminal.textContent += "\nExecution stopped by user.\n";
+    terminal.textContent += "\nExecution stopped by user.\n\n\n";
+    runBF2Button.innerText = 'Run BrainFuck2';
+    runBF2Button.disabled = false;
+    stopButton.disabled = true;
     scrollTerminalToBottom(terminal);
   });
 };
@@ -107,12 +110,12 @@ const runFuckIt = () => {
   const output = fuckit(code);
   const endTime = window.performance.now();
 
-  const executionTimeNs = ((endTime - startTime) * 1000); // Convert to nanoseconds
+  const executionTimeNs = ((endTime - startTime)); // Convert to nanoseconds
   terminal.textContent += 
     '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n' +
     'Running Fuck It... \n' +
     '--- Output: \n' + output + 
-    `\n\nExecution Time: ${executionTimeNs} μs(micro-second) \n\n`;
+    `\n\nExecution Time: ${executionTimeNs}ms \n\n`;
   scrollTerminalToBottom(terminal)
 };
 
@@ -196,11 +199,3 @@ clearButton.addEventListener('click', ()=>{
   terminal.textContent = ''
 })
 downloadButton.addEventListener('click', downloadBF2Code);
-
-stopButton.addEventListener('click', () => {
-  if (worker) {
-    worker.terminate(); // Terminate the worker
-    terminal.textContent += "\nExecution stopped by user.\n";
-    scrollTerminalToBottom(terminal);
-  }
-});
