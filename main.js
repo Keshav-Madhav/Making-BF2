@@ -69,7 +69,7 @@ const runBrainfuck2 = () => {
       terminal.textContent = `Error during execution: ${e.data.error}`;
     } else {
       terminal.textContent += e.data.result +
-        `\n\nExecution Time: ${e.data.executionTime} ms \n\n`;
+        `\n\nExecution Time: ${e.data.executionTime} ms for ${e.data.operationCount} operations.\n\n`;
       tapeTerminal.textContent = e.data.tape;
     }
 

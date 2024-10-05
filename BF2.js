@@ -32,7 +32,7 @@ class BF2Interpreter {
       this.outputCell.bind(this),       // '.'
       this.inputCell.bind(this),        // ','
       this.loopStart.bind(this),        // '['
-      this.loopEnd.bind(this)           // ']'
+      this.loopEnd.bind(this)          // ']'
     ];
     this.commandIndices = {
       '>': 0, '<': 1, '+': 2, '-': 3, '.': 4, ',': 5, '[': 6, ']': 7
@@ -101,7 +101,9 @@ class BF2Interpreter {
     if (!this.calculateTapeLength) {
       const lineNumber = this.tapeOutput.split('\n').length;
       const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
-      const spaceSeparatedTape = this.tape.join(', ');
+      const spaceSeparatedTape = this.tape
+        .map((value, index) => (index === this.pointer ? `\u0332${value}` : `${value}`)) // Green highlight
+        .join(', ');
       this.tapeOutput += `\n ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]`;
     }
   }
@@ -135,7 +137,7 @@ class BF2Interpreter {
     const loopError = this.preprocessLoops(); // Precompute loop positions
     if (loopError) {
       this.output += loopError;
-      return { result: this.output, tape: this.tapeOutput };
+      return { result: this.output, operationCount: this.operationCount, tape: this.tapeOutput };
     }
 
     while (this.instructionPointer < this.code.length) {
@@ -172,6 +174,7 @@ class BF2Interpreter {
 
     return {
       result: this.output,
+      operationCount: this.operationCount,
       tape: this.tapeOutput
     };
   }
@@ -180,27 +183,45 @@ class BF2Interpreter {
   executeCommand(command) {
     const commandIndex = this.commandIndices[command];
     if (commandIndex !== undefined) {
-      // Loop unrolling optimization: apply consecutive commands in one go
-      if (command === '+' || command === '-') {
+      // Loop unrolling optimization: apply consecutive commands in one go if tape is not recorded
+      if (!this.isTapeRecorded && (command === '+' || command === '-' || command === '>' || command === '<')) {
         let consecutiveCount = 1;
+        
+        // Count how many consecutive times the same command occurs
         while (this.code[this.instructionPointer + consecutiveCount] === command) {
           consecutiveCount++;
+          this.operationCount++;
         }
+  
+        // Apply the command multiple times in one step
         if (command === '+') {
           this.tape[this.pointer] = (this.tape[this.pointer] + consecutiveCount) & 255;
         } else if (command === '-') {
           this.tape[this.pointer] = (this.tape[this.pointer] - consecutiveCount) & 255;
+        } else if (command === '>') {
+          this.pointer += consecutiveCount;
+          if (this.pointer >= this.tape.length) {
+            return `Pointer moved out of bounds (right) at command ${this.instructionPointer}.\n`;
+          }
+        } else if (command === '<') {
+          this.pointer -= consecutiveCount;
+          if (this.pointer < 0) {
+            return `Pointer moved out of bounds (left) at command ${this.instructionPointer}.\n`;
+          }
         }
+  
+        // Skip over the consecutive commands
         this.instructionPointer += consecutiveCount - 1;
       } else {
+        // Execute the command normally
         return this.commands[commandIndex]();
       }
     }
-  }
+  }  
 
   // Commands mapped to specific functions
-  incrementPointer() { if (++this.pointer >= this.tape.length) return "Pointer moved out of bounds.\n"; }
-  decrementPointer() { if (--this.pointer < 0) return "Pointer moved out of bounds.\n"; }
+  incrementPointer() { if (++this.pointer >= this.tape.length) return `Pointer moved out of bounds (left) at command${this.instructionPointer}.\n`; }
+  decrementPointer() { if (--this.pointer < 0) return `Pointer moved out of bounds (right) at command${this.instructionPointer}.\n`; }
   incrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] + 1) & 255; } // Overflow protection
   decrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] - 1) & 255; }
   outputCell() {

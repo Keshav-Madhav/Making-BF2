@@ -11,6 +11,7 @@ onmessage = async function(e) {
 
     postMessage({
       result: output.result,
+      operationCount: output.operationCount,
       tape: output.tape,
       executionTime: endTime - startTime, // Calculate time inside the worker
     });
