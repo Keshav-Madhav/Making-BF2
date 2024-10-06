@@ -11,8 +11,8 @@ class BF2Interpreter {
     this.defaultTapeLength = 10; // Default tape length if not provided
     this.lengthWarning = false; // To track if length was not defined
     this.calculateTapeLength = calculateTapeLength; // To calculate tape length from %...%
-    this.tapeOutput = "" // Stores a string as terminal output for tape
-    this.isTapeRecorded = false // Marks whether the tape is to be recorded or not
+    this.bufferTapeOutput = []; // Buffer to store tape output lines
+    this.isTapeRecorded = false; // Marks whether the tape is to be recorded or not
 
     this.stopped = false; // Flag to stop the interpreter
     this.maxOperations = 1000000000; // Limit to avoid infinite loops
@@ -34,6 +34,10 @@ class BF2Interpreter {
     this.commandIndices = {
       '>': 0, '<': 1, '+': 2, '-': 3, '.': 4, ',': 5, '[': 6, ']': 7
     };
+
+    // Output buffer
+    this.outputBuffer = new Uint8Array(this.maxOutputLength);
+    this.outputIndex = 0;
   }
 
   // Function to extract and calculate tape length from %...%
@@ -96,12 +100,12 @@ class BF2Interpreter {
   // Efficient tape output to minimize redundant operations
   printTape(operation) {
     if (!this.calculateTapeLength) {
-      const lineNumber = this.tapeOutput.split('\n').length;
+      const lineNumber = this.bufferTapeOutput.length + 1;
       const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
       const spaceSeparatedTape = Array.from(this.tape)
         .map((value, index) => (index === this.pointer ? `\u0332${value}` : `${value}`)) // Green highlight
         .join(', ');
-      this.tapeOutput += `\n ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]`;
+      this.bufferTapeOutput.push(` ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]`);
     }
   }
 
@@ -113,12 +117,12 @@ class BF2Interpreter {
   // Function to run the Brainfuck code asynchronously
   async run(incomingCode, recordTape) {
     this.isTapeRecorded = recordTape;
-    recordTape && (this.maxOperations = 100000);
-    this.tapeOutput = '';
+    recordTape && (this.maxOperations = 1000000);
+    this.bufferTapeOutput = []; // Reset buffer
     this.code = incomingCode.replace(/[\s\n]+/g, ''); // Remove whitespaces and newlines
 
     // Parse tape length before running the main code
-    if(!this.calculateTapeLength){
+    if (!this.calculateTapeLength) {
       this.parseTapeLength();
     } else {
       this.tape = new Uint8Array(this.defaultTapeLength); // Fall back to default if invalid
@@ -134,7 +138,7 @@ class BF2Interpreter {
     const loopError = this.preprocessLoops(); // Precompute loop positions
     if (loopError) {
       this.output += loopError;
-      return { result: this.output, operationCount: this.operationCount, tape: this.tapeOutput };
+      return { result: this.output, operationCount: this.operationCount, tape: this.bufferTapeOutput.join('\n') };
     }
 
     while (this.instructionPointer < this.code.length) {
@@ -166,13 +170,17 @@ class BF2Interpreter {
       this.printTape(this.code[this.instructionPointer - 1]);
     }
 
+    // Convert output buffer to string
+    this.output += String.fromCharCode.apply(null, this.outputBuffer.subarray(0, this.outputIndex));
+
     this.lenCounter > 0 && (this.output += `...(${this.lenCounter} more characters)`);
     this.operationCount > this.maxOperations && (this.output += `\n\nExecution stopped: Max operations limit reached (${this.maxOperations}).\n`);
 
+    // Join bufferTapeOutput to produce final tape output
     return {
       result: this.output,
       operationCount: this.operationCount,
-      tape: this.tapeOutput
+      tape: this.bufferTapeOutput.join('\n')
     };
   }
 
@@ -222,10 +230,17 @@ class BF2Interpreter {
   incrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] + 1) & 255; } // Overflow protection
   decrementCell() { this.tape[this.pointer] = (this.tape[this.pointer] - 1) & 255; }
   outputCell() {
-    const char = String.fromCharCode(this.tape[this.pointer]);
-    this.isTapeRecorded && (this.tapeOutput += `    => ${char === '\n' ? '\\n' : char}`);
-    const len = this.output.length;
-    len > this.maxOutputLength ? this.lenCounter += 1 : this.output += char;
+    const charCode = this.tape[this.pointer];
+    if (this.isTapeRecorded) {
+      this.tapeOutput += `    => ${charCode === 10 ? '\\n' : String.fromCharCode(charCode)}`;
+    }
+  }
+  inputCell() {
+    if (this.inputIndex < this.input.length) {
+      this.tape[this.pointer] = this.input.charCodeAt(this.inputIndex++) & 255;
+    } else {
+      this.tape[this.pointer] = 0; // EOF behavior
+    }
   }
   inputCell() { this.tape[this.pointer] = this.inputIndex < this.input.length ? this.input.charCodeAt(this.inputIndex++) : 0; }
   loopStart() { if (this.tape[this.pointer] === 0) this.instructionPointer = this.bracketMap[this.instructionPointer]; }

@@ -128,25 +128,27 @@ The BF2 Interpreter has undergone several significant optimizations to improve p
    - Implemented loop unrolling for consecutive identical commands (`+`, `-`, `>`, `<`).
    - This reduces the number of function calls and increases execution speed for repetitive operations.
 
-3. **Tape Recording Option**:
-   - Introduced an optional tape recording feature for debugging, with a performance trade-off.
-   - The `printTape` method records tape state when enabled and allows code to run efficiently when disabled.
-
-4. **Precompiled Bracket Optimization**:
+3. **Precompiled Bracket Optimization**:
    - Implemented a `preprocessLoops` method to build a `bracketMap` that stores matching loop positions.
    - This allows for O(1) time complexity when jumping between matching brackets, significantly speeding up execution for nested loops.
 
-5. **Dynamic Tape Length Optimization**:
+4. **Dynamic Tape Length Optimization**:
    - Added the ability to calculate tape length from a `%...%` syntax in the code.
    - This allows for flexible memory allocation based on the program's needs, reducing unnecessary memory usage and improving efficiency for programs with varying memory requirements.
+
+5. **Output and TapeOutput Buffer Optimization**:
+   - Changed both `output` and `tapeOutput` from string-based to buffer-based, reducing the overhead of repeated string concatenations.
+   - This massively improved performance, with a **466500% speed increase** for operations requiring large amounts of output or tape state recording.
 
 6. **Output Length Limitation**:
    - Implemented a `maxOutputLength` limit to crop the result and prevent out-of-memory errors in browser environments.
    - This optimization ensures that extremely large outputs don't crash the interpreter or the browser, improving reliability for long-running or output-heavy programs.
 
-Some other minor optimizations such as `maxOperations` to prevent infinite loops, bitwise AND operation (`& 255`) to handle cell value overflow and `run` method being asynchronous are also implemented. 
+Some other minor optimizations, such as `maxOperations` to prevent infinite loops, bitwise AND operation (`& 255`) to handle cell value overflow, and the `run` method being asynchronous, are also implemented. 
 These optimizations result in a significantly more efficient, flexible, and robust BF2 interpreter. 
-In the most basic test of running an infinite loop of ```+[+.-]``` the latest instance of the code can run 10,000,000 operations in <200ms. 
+In the most basic test of running an infinite loop of `+[+.-]`, the latest instance of the code can run:
+- 10,000,000 operations in less than ~130ms (without tape output) //old record was 10,000,000 in ~172ms
+-    100,000 operations in less than ~90ms (with tape output) //old record was 100,000 in ~424106ms
 
 ## Contributing
 
