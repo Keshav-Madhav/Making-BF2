@@ -7,7 +7,10 @@ onmessage = async function(e) {
     const startTime = performance.now(); // Start time inside the worker
     const interpreter = new BF2Interpreter(); // Create a new interpreter instance
     const output = await interpreter.run(code, showTape);
-    const tapeOutput = output.tape.join('\n')
+    let tapeOutput = '';
+    if (showTape) {
+      tapeOutput = output.tape.join('\n');
+    }
     const endTime = performance.now(); // End time inside the worker
 
     postMessage({

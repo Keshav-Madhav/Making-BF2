@@ -83,10 +83,31 @@ class BF2Interpreter {
     if (!this.calculateTapeLength) {
       const lineNumber = this.bufferTapeOutput.length + 1;
       const paddedLineNumber = lineNumber.toString().padStart(3, ' ');
+
       const spaceSeparatedTape = Array.from(this.tape)
-        .map((value, index) => (index === this.pointer ? `\u0332${value}` : `${value}`)) // Green highlight
+        .map((value, index) => (index === this.pointer ? `\u0332${value}` : `${value}`)) // Underline the pointer value
         .join(', ');
-      this.bufferTapeOutput.push(` ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]`);
+
+      // Add "=> (output)" if the operation is '.'
+      const outputSuffix = operation === '.' 
+        ? `   => ${this.getReadableOutput(this.tape[this.pointer])}`
+        : '';
+
+      this.bufferTapeOutput.push(` ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]${outputSuffix}`);
+    }
+  }
+
+  // Helper function to convert output into readable string with escape sequences
+  getReadableOutput(charCode) {
+    const char = String.fromCharCode(charCode);
+    switch (char) {
+      case '\n': return '\\n';
+      case '\t': return '\\t';
+      case '\r': return '\\r';
+      case '\b': return '\\b';
+      case '\f': return '\\f';
+      default:
+        return /[ -~]/.test(char) ? char : `\\x${charCode.toString(16).padStart(2, '0')}`;
     }
   }
 
