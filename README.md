@@ -7,8 +7,9 @@ BF2 is an extension of the Brainfuck programming language that uses the conventi
 
 - [Introduction](#introduction)
 - [Features](#features)
-  - [WhiteSpace and comment support](#white-space-and-comment-support)
   - [Tape Terminal](#tape-terminal)
+  - [Static Input Array](#static-input-array)
+  - [WhiteSpace and comment support](#white-space-and-comment-support)
   - [Tape Length Definition](#tape-length-definition)
   - [Brainfuck Command Support](#brainfuck-command-support)
 - [Usage](#usage)
@@ -26,15 +27,32 @@ BF2 is a remake of the original Brainfuck concept, implemented in JavaScript wit
 
 ## Features
 
-### White-Space and comment Support
-
-Due to the compiler being built in javascript, an easy to implement easy of life feature has been inplemented which removes whitespaces and new/next lines. This allows to make easier to read brainfuck code which can be written out spread over multiple lines and indentation.
-Comments are supported aswell as any character other than the reserved characters are removed/ignored.
-
 ### Tape Terminal
 
 Tape terminal is an array of strings that will be returned after the brainfuck code is interpreted. This useful for debugging the code as it provides insight into the current pointer, memory updation and allocation. The run function takes a boolean to determine whether the tape will be returned as it is a performance intensive action. If tape terminal is true, certain optimization techniques such as loop unrolling are stopped. Default is false meaning tape will not be recorded and performance will be optimal.
 The strings in tape array is formatted in a terminal style to provide feedback to the user showing exactly what changes are happening in the tape. This includes showing operation by operation where the pointer is, what if the calue of cells, and what is the output at that operation. Each operation's tape is a new string the array and is best displayed by joining with ```'\n'```.
+
+### Static Input Array
+
+Brainfuck2 supports a static array defined at the end of the code which is used to pass the inputs to the code. This array is parsed before the code is run to get the inputs and then appropirately assign them to the input symbol during runtime. Each input takes on the value from the array one by one, meaning the first input will take the first number of the array and second will take the second number. If there are more numbers than the elements in array, they array wraps around, so an array with single element can be the input for all commas of the code.
+This array is defined by encompassing space seperated number between ```(``` and ```)```. For Eg: ```(3 4 20)```.
+
+#### Syntax
+
+```bf
+++,++ (30)
+```
+- Cell0 will have the value of 1+1+30+1+1 = 34
+
+```bf
+,>,>, (30 22)
+```
+- Cell0 = 30, Cell1 = 22, Cell2 = 30
+
+### White-Space and comment Support
+
+Due to the compiler being built in javascript, an easy to implement easy of life feature has been inplemented which removes whitespaces and new/next lines. This allows to make easier to read brainfuck code which can be written out spread over multiple lines and indentation.
+Comments are supported aswell as any character other than the reserved characters are removed/ignored.
 
 ### Tape Length Definition
 
@@ -53,17 +71,18 @@ In BF2, tape length can be specified using the `%` symbol. The Brainfuck code be
 
 BF2 standard Brainfuck commands and new commands:
 
-| Command | Description                                                      |
-|---------|------------------------------------------------------------------|
-| `>`     | Move the pointer to the right.                                   |
-| `<`     | Move the pointer to the left.                                    |
-| `+`     | Increment the memory cell at the pointer.                        |
-| `-`     | Decrement the memory cell at the pointer.                        |
-| `.`     | Output the ASCII value at the memory cell.                       |
-| `,`     | Input a character and store its ASCII value in the memory cell.  |
-| `[`     | Jump past the matching `]` if the cell at the pointer is 0.      |
-| `]`     | Jump back to the matching `[` if the cell at the pointer is not 0.|
-| `%`     | Defines starting and ending of a segment of the code             |
+| Command | Description                                                                              |
+|---------|------------------------------------------------------------------------------------------|
+| `>`     | Move the pointer to the right.                                                           |
+| `<`     | Move the pointer to the left.                                                            |
+| `+`     | Increment the memory cell at the pointer.                                                |
+| `-`     | Decrement the memory cell at the pointer.                                                |
+| `.`     | Output the ASCII value at the memory cell.                                               |
+| `,`     | Input a character and store its ASCII value in the memory cell.                          |
+| `[`     | Jump past the matching `]` if the cell at the pointer is 0.                              |
+| `]`     | Jump back to the matching `[` if the cell at the pointer is not 0.                       |
+| `%`     | Defines starting and ending of a segment of the code                                     |
+| `()`    | Used to wrap numbers in a [static array](#static-input-array) to predefine inputs        |
 
 ## Example Codes
 
@@ -77,21 +96,27 @@ This Brainfuck code prints "Hello, World!" to the output.
 
 #### 2. Sum of two numbers (max sum can be 9)"
 
-This code takes a single character input and prints "Hello, {input}".
+This code takes two numbers as inputs and returns the sum of them upto max of 9.
 
 ```bf
-++       c0 = 2
-> +++++  c1 = 5
+,      
+> , 
 
 [< + > -] ++++ ++++ [< +++ +++ > -] < .
+
+(4 5)
 ```
 
-#### 3. Define Tape Length of 10
+#### 3. Define Tape Length
 
-This code defines the tape length to 10 using the % symbol.
-
+- This code defines the tape length to 10 using the % symbol.
 ```bf
 %++++++++++% >+.
+```
+
+- This code uses the input to make the tape length defination easier
+```bf
+%,(20)% ++
 ```
 
 #### 4. Print Numbers Between 1 and 10

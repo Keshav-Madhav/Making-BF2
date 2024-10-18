@@ -1,9 +1,9 @@
 class BF2Interpreter {
   constructor(calculateTapeLength = false) {
     this.code = ""; // BF2 code
-    this.input = ""; // Input to the Brainfuck code
     this.tape = new Uint8Array(10); // Memory tape, using Uint8Array for better performance
     this.pointer = 0; // Points to the current memory cell
+    this.input = []; // Input to the Brainfuck code
     this.inputIndex = 0; // Input index
     this.instructionPointer = 0; // To traverse the BF2 code
     this.bracketMap = new Map(); // Precomputed loop positions
@@ -88,12 +88,29 @@ class BF2Interpreter {
         .map((value, index) => (index === this.pointer ? `\u0332${value}` : `${value}`)) // Underline the pointer value
         .join(', ');
 
-      // Add "=> (output)" if the operation is '.'
-      const outputSuffix = operation === '.' 
-        ? `   => ${this.getReadableOutput(this.tape[this.pointer])}`
-        : '';
+      // If the operation is ',', add the input value instead of a comma
+      let operationValue = operation;
+      if (operation === ',' && this.input.length > 0) {
+        const inputValue = this.input[this.inputIndex % this.input.length];
+        operationValue = `${inputValue}`;
 
-      this.bufferTapeOutput.push(` ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]${outputSuffix}`);
+        // Adjust the spaces after operationValue based on the length of the input value
+        const extraSpacesToRemove = Math.min(operationValue.length - 1, 2); // Max 2 spaces to remove
+        const baseSpacing = '     '; // Default 5 spaces between the operation and the tape
+        const adjustedSpacing = baseSpacing.slice(0, baseSpacing.length - extraSpacesToRemove);
+
+        this.bufferTapeOutput.push(
+          ` ${paddedLineNumber}-> ${operationValue}${adjustedSpacing}[${spaceSeparatedTape}]`
+        );
+      } else {
+        // Add "=> (output)" if the operation is '.'
+        const outputSuffix =
+          operation === '.' ? `   => ${this.getReadableOutput(this.tape[this.pointer])}` : '';
+
+        this.bufferTapeOutput.push(
+          ` ${paddedLineNumber}->   ${operation}   [${spaceSeparatedTape}]${outputSuffix}`
+        );
+      }
     }
   }
 
@@ -130,6 +147,33 @@ class BF2Interpreter {
     this.isTapeRecorded = recordTape;
     recordTape && (this.maxOperations = 100000);
     this.bufferTapeOutput = []; // Reset buffer
+
+    const match = incomingCode.match(/\((.*?)\)$/);
+    if (match) {
+        const inputStrings = match[1].split(' ');
+        this.input = [];
+
+        for (let val of inputStrings) {
+            const num = Number(val);
+            if (isNaN(num)) {
+                this.output += `Error: Invalid input '${val}'. Only numeric inputs are allowed.\n`;
+                return { result: this.output, operationCount: this.operationCount, tape: this.bufferTapeOutput };
+            }
+            this.input.push(num);
+        }
+
+        // Remove the input part (including the parentheses) from the code
+        incomingCode = incomingCode.slice(0, match.index).trim();
+    } else {
+        this.input = []; // No input provided
+    }
+    
+    if (this.code.includes(',') && this.input.length === 0) {
+      this.output += "Error: Input expected, but none provided.\n";
+      return { result: this.output, operationCount: this.operationCount, tape: this.bufferTapeOutput };
+    }
+    
+
     this.code = incomingCode.replace(/[\s\n]+/g, ''); // Remove whitespaces and newlines
 
     // Parse tape length before running the main code
@@ -236,7 +280,11 @@ class BF2Interpreter {
         }
         break;
       case 44: // ,
-        this.tape[this.pointer] = this.inputIndex < this.input.length ? this.input.charCodeAt(this.inputIndex++) : 0;
+        if (this.input.length > 0) {
+          const inputValue = this.input[this.inputIndex % this.input.length];
+          this.tape[this.pointer] = (this.tape[this.pointer] + inputValue) & 255;
+          this.inputIndex++;
+        }
         break;
       case 91: // [
         if (this.tape[this.pointer] === 0) this.instructionPointer = this.bracketMap.get(this.instructionPointer);
